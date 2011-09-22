@@ -41,6 +41,9 @@ module Riak
     # @return [Hash] a hash of any X-Riak-Meta-* headers that were in the HTTP response, keyed on the trailing portion
     attr_accessor :meta
 
+    # @return [Hash] a hash of any X-Riak-Index-* headers that were in the HTTP response, keyed on the trailing portion
+    attr_accessor :index
+
     # @return [Boolean] whether to attempt to prevent stale writes using conditional PUT semantics, If-None-Match: * or If-Match: {#etag}
     # @see http://wiki.basho.com/display/RIAK/REST+API#RESTAPI-Storeaneworexistingobjectwithakey Riak Rest API Docs
     attr_accessor :prevent_stale_writes
@@ -82,7 +85,7 @@ module Riak
     # @see Bucket#get
     def initialize(bucket, key=nil)
       @bucket, @key = bucket, key
-      @links, @meta = Set.new, {}
+      @links, @meta, @index = Set.new, {}, {}
       yield self if block_given?
     end
 
@@ -272,6 +275,13 @@ module Riak
         Hash[
              meta.map do |k,v|
                [k.sub(%r{^x-riak-meta-}i, ''), [v]]
+             end
+            ]
+      end
+      extract_if_present(metadata, 'X-Riak-Index', :index) do |index|
+        Hash[
+             index.map do |k,v|
+               [k.sub(%r{^x-riak-index-}i, ''), [v]]
              end
             ]
       end
