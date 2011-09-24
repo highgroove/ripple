@@ -35,6 +35,7 @@ module Riak
         optional :last_mod,         :uint32, 7
         optional :last_mod_usecs,   :uint32, 8
         repeated :usermeta,         RpbPair, 9
+        repeated :indexes,          RpbPair, 10
       end
 
       # Primary messages

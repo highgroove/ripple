@@ -17,7 +17,8 @@ module Riak
                                         :content_type => maybe_encode(robject.content_type),
                                         :links => robject.links.map {|l| encode_link(l) }.compact)
 
-          pbuf.content.usermeta = robject.meta.map {|k,v| encode_meta(k,v)} if robject.meta.any?
+          pbuf.content.usermeta = robject.meta.map {|k,v| encode_pair(k,v)} if robject.meta.any?
+          pbuf.content.indexes = robject.index.map {|k,v| encode_pair(k,v)} if robject.index.any?
           pbuf.content.vtag = maybe_encode(robject.etag) if robject.etag.present?
           if ENCODING # 1.9 support
             pbuf.content.charset = maybe_encode(robject.raw_data.encoding.name)
@@ -52,7 +53,8 @@ module Riak
           robject.etag = pbuf.vtag if pbuf.vtag.present?
           robject.content_type = pbuf.content_type if pbuf.content_type.present?
           robject.links = pbuf.links.map(&method(:decode_link)) if pbuf.links.present?
-          pbuf.usermeta.each {|pair| decode_meta(pair, robject.meta) } if pbuf.usermeta.present?
+          pbuf.usermeta.each {|pair| decode_pair(pair, robject.meta) } if pbuf.usermeta.present?
+          pbuf.indexes.each {|pair| decode_pair(pair, robject.index) } if pbuf.indexes.present?
           if pbuf.last_mod.present?
             robject.last_modified = Time.at(pbuf.last_mod)
             robject.last_modified += pbuf.last_mod_usecs / 1000000 if pbuf.last_mod_usecs.present?
@@ -71,11 +73,11 @@ module Riak
                       :tag => maybe_encode(link.tag.to_s))
         end
 
-        def decode_meta(pbuf, hash)
+        def decode_pair(pbuf, hash)
           hash[pbuf.key] = pbuf.value
         end
 
-        def encode_meta(key,value)
+        def encode_pair(key,value)
           return nil unless value.present?
           RpbPair.new(:key => maybe_encode(key.to_s),
                       :value => maybe_encode(value.to_s))
